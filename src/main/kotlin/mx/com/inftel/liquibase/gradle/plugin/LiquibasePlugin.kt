@@ -41,12 +41,12 @@ class LiquibasePlugin : Plugin<Project> {
 
 open class LiquibaseExtension(private val project: Project) {
 
-    fun db(name: String, block: LiquibaseParameters.() -> Unit) {
+    fun database(name: String, block: LiquibaseParameters.() -> Unit) {
         val parameters = LiquibaseParameters()
         parameters.block()
         for (command in LiquibaseCommandEnum.values()) {
             project.tasks.register("$name${command.name}", LiquibaseTask::class.java) {
-                it.group = "liquibase"
+                it.group = "liquibase $name"
                 it.description = command.description
                 it.command = command
                 it.parameters = parameters
