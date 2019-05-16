@@ -35,6 +35,7 @@ class LiquibasePlugin : Plugin<Project> {
     override fun apply(target: Project) {
         target.configurations.maybeCreate("liquibaseRuntime")
         target.extensions.create("liquibase", LiquibaseExtension::class.java, target)
+        target.dependencies.add("liquibaseRuntime", "${LiquibaseVersion.group}:${LiquibaseVersion.name}:${LiquibaseVersion.version}")
     }
 }
 

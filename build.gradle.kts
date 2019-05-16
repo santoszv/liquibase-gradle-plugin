@@ -1,5 +1,6 @@
 import org.gradle.api.publish.maven.internal.publication.DefaultMavenPublication
 import org.jetbrains.dokka.gradle.DokkaTask
+import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.io.BufferedReader
 import java.io.BufferedWriter
@@ -55,6 +56,32 @@ tasks.register<Jar>("sourcesJar") {
     val sourceSet = sourceSets.main.get()
     from(sourceSet.allSource)
 }
+
+val generatedSourcesDir = file("$buildDir/generated/src")
+
+val generateSources by tasks.creating(DefaultTask::class) {
+    outputs.dir(generatedSourcesDir)
+    doFirst {
+        generatedSourcesDir.exists() || generatedSourcesDir.mkdirs()
+        val file = File(generatedSourcesDir, "LiquibaseVersion.kt")
+        file.writeText("""
+            package mx.com.inftel.liquibase.gradle.plugin
+
+            object LiquibaseVersion {
+                val group = "${properties["Project.GroupID"]}"
+                val name = "${properties["Project.ArtifactID"]}"
+                val version = "${properties["Project.Version"]}"
+            }
+        """.trimIndent())
+    }
+}
+
+sourceSets["main"].withConvention(KotlinSourceSet::class) {
+    kotlin.srcDir(generatedSourcesDir)
+}
+
+val compileKotlin by tasks.getting(KotlinCompile::class)
+compileKotlin.dependsOn(generateSources)
 
 fun password(user: String): String {
     val process = Runtime.getRuntime().exec("pinentry-mac")
