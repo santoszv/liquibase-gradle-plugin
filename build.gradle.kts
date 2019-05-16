@@ -102,50 +102,13 @@ fun password(user: String): String {
 gradlePlugin {
     plugins {
         create("liquibase") {
-            id = "mx.com.inftel.oss.liquibase-gradle-plugin"
+            id = "mx.com.inftel.liquibase"
             implementationClass = "mx.com.inftel.liquibase.gradle.plugin.LiquibasePlugin"
         }
     }
 }
 
 publishing {
-    /*publications {
-        create<MavenPublication>("LiquibaseGradlePlugin") {
-
-            groupId = "${properties["Project.GroupID"]}"
-            artifactId = "${properties["Project.ArtifactID"]}"
-            version = "${properties["Project.Version"]}"
-
-            from(components["java"])
-            artifact(tasks["sourcesJar"])
-            artifact(tasks["javadocJar"])
-
-            pom {
-                name.set("Liquibase Gradle Plugin")
-                description.set("Liquibase Gradle Plugin")
-                url.set("https://github.com/santoszv")
-                licenses {
-                    license {
-                        name.set("The Apache License, Version 2.0")
-                        url.set("https://www.apache.org/licenses/LICENSE-2.0")
-                    }
-                }
-                developers {
-                    developer {
-                        id.set("https://github.com/santoszv")
-                        name.set("Santos Zatarain Vera")
-                        email.set("coder.santoszv(at)gmail.com")
-                    }
-                }
-                scm {
-                    connection.set("scm:git:https://github.com/santoszv")
-                    developerConnection.set("scm:git:https://github.com/santoszv")
-                    url.set("https://github.com/santoszv")
-                }
-            }
-        }
-    }*/
-
     repositories {
         val isSnapshot = "${properties["Project.Version"] ?: ""}".endsWith("-SNAPSHOT")
         val isUpload = "${properties["OSSRH.Upload"] ?: ""}".toBoolean()
@@ -183,10 +146,58 @@ afterEvaluate {
 
                 artifact(tasks["sourcesJar"])
                 artifact(tasks["javadocJar"])
+
+                pom {
+                    name.set("Liquibase Gradle Plugin")
+                    description.set("Liquibase Gradle Plugin")
+                    url.set("https://github.com/santoszv/liquibase-gradle-plugin")
+                    licenses {
+                        license {
+                            name.set("The Apache License, Version 2.0")
+                            url.set("https://www.apache.org/licenses/LICENSE-2.0")
+                        }
+                    }
+                    developers {
+                        developer {
+                            id.set("https://github.com/santoszv")
+                            name.set("Santos Zatarain Vera")
+                            email.set("coder.santoszv_at_gmail.com")
+                        }
+                    }
+                    scm {
+                        connection.set("scm:git:https://github.com/santoszv/liquibase-gradle-plugin.git")
+                        developerConnection.set("scm:git:https://github.com/santoszv/liquibase-gradle-plugin.git")
+                        url.set("https://github.com/santoszv/liquibase-gradle-plugin")
+                    }
+                }
             }
             val jasperreportsPluginMarkerMaven = findByName("liquibasePluginMarkerMaven") as DefaultMavenPublication
             jasperreportsPluginMarkerMaven.apply {
                 version = "${properties["Project.Version"]}"
+
+                pom {
+                    name.set("Liquibase Gradle Plugin")
+                    description.set("Liquibase Gradle Plugin")
+                    url.set("https://github.com/santoszv/liquibase-gradle-plugin")
+                    licenses {
+                        license {
+                            name.set("The Apache License, Version 2.0")
+                            url.set("https://www.apache.org/licenses/LICENSE-2.0")
+                        }
+                    }
+                    developers {
+                        developer {
+                            id.set("https://github.com/santoszv")
+                            name.set("Santos Zatarain Vera")
+                            email.set("coder.santoszv_at_gmail.com")
+                        }
+                    }
+                    scm {
+                        connection.set("scm:git:https://github.com/santoszv/liquibase-gradle-plugin.git")
+                        developerConnection.set("scm:git:https://github.com/santoszv/liquibase-gradle-plugin.git")
+                        url.set("https://github.com/santoszv")
+                    }
+                }
             }
         }
     }
