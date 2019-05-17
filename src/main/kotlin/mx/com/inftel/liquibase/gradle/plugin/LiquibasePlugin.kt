@@ -46,7 +46,7 @@ open class LiquibaseExtension(private val project: Project) {
         parameters.block()
         for (command in LiquibaseCommandEnum.values()) {
             project.tasks.register("$name${command.name}", LiquibaseTask::class.java) {
-                it.group = "liquibase $name"
+                it.group = "$name database"
                 it.description = command.description
                 it.command = command
                 it.parameters = parameters
@@ -129,35 +129,35 @@ class LiquibaseParameters {
 
 enum class LiquibaseCommandEnum(val description: String) {
     // Database Update Commands
-    Update("Updates database to current version."),
-    UpdateCount("Applies the next <value> change sets."),
-    UpdateSQL("Writes SQL to update database to current version to a file."),
-    UpdateCountSQL("Writes SQL to apply the next <value> change sets to a file."),
+    DatabaseUpdate("Updates database to current version."),
+    DatabaseUpdateCount("Applies the next <value> change sets."),
+    DatabaseUpdateSQL("Writes SQL to update database to current version to a file."),
+    DatabaseUpdateCountSQL("Writes SQL to apply the next <value> change sets to a file."),
     // Database Rollback Commands
-    Rollback("Rolls back the database to the state it was in when the tag was applied."),
+    DatabaseRollback("Rolls back the database to the state it was in when the tag was applied."),
     //RollbackToDate("Rolls back the database to the state it was in at the given date/time."),
-    RollbackCount("Rolls back the last <value> change sets."),
-    RollbackSQL("Writes SQL to roll back the database to the state it was in when the tag was applied to a file."),
+    DatabaseRollbackCount("Rolls back the last <value> change sets."),
+    DatabaseRollbackSQL("Writes SQL to roll back the database to the state it was in when the tag was applied to a file."),
     //RollbackToDateSQL("Writes SQL to roll back the database to the state it was in at the given date/time version to a file."),
-    RollbackCountSQL("Writes SQL to roll back the last <value> change sets to a file."),
+    DatabaseRollbackCountSQL("Writes SQL to roll back the last <value> change sets to a file."),
     //FutureRollbackSQL("Writes SQL to roll back the database to the current state after the changes in the changeslog have been applied."),
     //UpdateTestingRollback("Updates the database, then rolls back changes before updating again."),
-    GenerateChangeLog("Generate changeLog of the database to standard out. v1.8 requires the dataDir parameter currently."),
+    DatabaseGenerateChangeLog("Generate changeLog of the database to standard out. v1.8 requires the dataDir parameter currently."),
     // Diff Commands
     //Diff("Writes description of differences to standard out."),
     //DiffChangeLog("Writes Change Log XML to update the base database to the target database to standard out."),
     // Documentation Commands
-    Doc("Generates Javadoc-like documentation based on current database and change log."),
+    DatabaseDoc("Generates Javadoc-like documentation based on current database and change log."),
     // Maintenance Commands
-    Tag("Tags the current database state for future rollback."),
-    TagExists("Checks whether the given tag is already existing."),
-    Status("Outputs count of unrun change sets."),
-    Validate("Checks the changelog for errors."),
-    ChangelogSync("Mark all changes as executed in the database."),
-    ChangelogSyncSQL("Writes SQL to mark all changes as executed in the database to a file."),
+    DatabaseTag("Tags the current database state for future rollback."),
+    DatabaseTagExists("Checks whether the given tag is already existing."),
+    DatabaseStatus("Outputs count of unrun change sets."),
+    DatabaseValidate("Checks the changelog for errors."),
+    DatabaseChangelogSync("Mark all changes as executed in the database."),
+    DatabaseChangelogSyncSQL("Writes SQL to mark all changes as executed in the database to a file."),
     //MarkNextChangeSetRan("Mark the next change set as executed in the database."),
-    ListLocks("Lists who currently has locks on the database changelog."),
-    ReleaseLocks("Releases all locks on the database changelog."),
-    DropAll("Drops all database objects owned by the user. Note that functions, procedures and packages are not dropped (limitation in 1.8.1)."),
-    ClearCheckSums("Removes current checksums from database. On next run checksums will be recomputed.")
+    DatabaseListLocks("Lists who currently has locks on the database changelog."),
+    DatabaseReleaseLocks("Releases all locks on the database changelog."),
+    DatabaseDropAll("Drops all database objects owned by the user. Note that functions, procedures and packages are not dropped (limitation in 1.8.1)."),
+    DatabaseClearCheckSums("Removes current checksums from database. On next run checksums will be recomputed.")
 }
