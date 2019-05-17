@@ -1,24 +1,19 @@
-import org.gradle.api.publish.maven.internal.publication.DefaultMavenPublication
-import org.jetbrains.dokka.gradle.DokkaTask
 import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import java.io.BufferedReader
-import java.io.BufferedWriter
-import java.io.InputStreamReader
-import java.io.OutputStreamWriter
 
 plugins {
-    kotlin("jvm") version "1.3.31"
-    id("org.jetbrains.dokka") version "0.9.18"
-    `java-gradle-plugin`
+    `embedded-kotlin`
     `maven-publish`
+    `java-gradle-plugin`
     signing
+    id("com.gradle.plugin-publish") version "0.10.1"
 }
 
+group = "mx.com.inftel.oss.liquibase"
+version = "1.0.0-SNAPSHOT"
+
 repositories {
-    mavenCentral()
     jcenter()
-    maven("https://oss.sonatype.org/content/repositories/snapshots/")
 }
 
 dependencies {
@@ -30,25 +25,55 @@ dependencies {
     compileOnly("org.liquibase:liquibase-core:3.6.3")
 }
 
-tasks.withType<KotlinCompile> {
+sourceSets {
+    main {
+        withConvention(KotlinSourceSet::class) {
+            kotlin.srcDir("$buildDir/version/src")
+        }
+    }
+}
+
+tasks.withType<KotlinCompile>().configureEach {
     kotlinOptions {
         javaParameters = true
         jvmTarget = "1.8"
     }
 }
 
-tasks.withType<DokkaTask> {
-    moduleName = "Liquibase Gradle Plugin"
-    outputFormat = "javadoc"
-    outputDirectory = "$buildDir/dokka/javadoc"
-    includes = listOf("module.md", "packages.md")
-    jdkVersion = 8
+tasks.named("compileKotlin", KotlinCompile::class) {
+    dependsOn("generateVersion")
+}
+
+tasks.register("generateVersion") {
+    outputs.dir("$buildDir/version/src")
+    doFirst {
+        val dir = file("$buildDir/version/src")
+        dir.exists() || dir.mkdirs()
+        val file = File(dir, "LiquibaseVersion.kt")
+        file.writeText("""
+            package mx.com.inftel.liquibase.gradle.plugin
+
+            object LiquibaseVersion {
+                val group = "${project.group}"
+                val name = "${project.name}"
+                val version = "${project.version}"
+            }
+        """.trimIndent())
+    }
 }
 
 tasks.register<Jar>("javadocJar") {
+    outputs.dir("$buildDir/javadoc")
+
+    doFirst {
+        val dir = file("$buildDir/javadoc")
+        dir.exists() || dir.mkdirs()
+        val file = File(dir, "README")
+        file.writeText("No Javadoc, please see directly Kotlin source code.")
+    }
+
     archiveClassifier.set("javadoc")
-    from("$buildDir/dokka/javadoc")
-    dependsOn("dokka")
+    from("$buildDir/javadoc")
 }
 
 tasks.register<Jar>("sourcesJar") {
@@ -57,119 +82,58 @@ tasks.register<Jar>("sourcesJar") {
     from(sourceSet.allSource)
 }
 
-val generatedSourcesDir = file("$buildDir/generated/src")
-
-val generateSources by tasks.creating(DefaultTask::class) {
-    outputs.dir(generatedSourcesDir)
-    doFirst {
-        generatedSourcesDir.exists() || generatedSourcesDir.mkdirs()
-        val file = File(generatedSourcesDir, "LiquibaseVersion.kt")
-        file.writeText("""
-            package mx.com.inftel.liquibase.gradle.plugin
-
-            object LiquibaseVersion {
-                val group = "${properties["Project.GroupID"]}"
-                val name = "${properties["Project.ArtifactID"]}"
-                val version = "${properties["Project.Version"]}"
-            }
-        """.trimIndent())
-    }
-}
-
-sourceSets["main"].withConvention(KotlinSourceSet::class) {
-    kotlin.srcDir(generatedSourcesDir)
-}
-
-val compileKotlin by tasks.getting(KotlinCompile::class)
-compileKotlin.dependsOn(generateSources)
-
-fun password(user: String): String {
-    val process = Runtime.getRuntime().exec("pinentry-mac")
-    try {
-        val input = BufferedReader(InputStreamReader(process.inputStream))
-        val output = BufferedWriter(OutputStreamWriter(process.outputStream))
-
-        val timeout = "SETTIMEOUT 30"
-        val description = "SETDESC Enter password for $user"
-        val prompt = "SETPROMPT Password:"
-
-        var line: String
-        val ok: () -> Unit = {
-            line = input.readLine()
-            //println(line)
-            if (!line.startsWith("OK"))
-                throw UnsupportedOperationException()
-        }
-        val command: (str: String) -> Unit = {
-            //println(it)
-            output.appendln(it)
-            output.flush()
-            ok()
-        }
-        val password: () -> String = {
-            //println("GETPIN")
-            output.appendln("GETPIN")
-            output.flush()
-            line = input.readLine()
-            if (!line.startsWith("D "))
-                throw UnsupportedOperationException()
-            line.substring(2)
-        }
-
-        ok()
-        command(timeout)
-        command(description)
-        command(prompt)
-        return password()
-    } finally {
-        process.destroy()
-    }
-}
-
 gradlePlugin {
     plugins {
         create("liquibase") {
-            id = "mx.com.inftel.liquibase"
+            id = "mx.com.inftel.oss.liquibase"
             implementationClass = "mx.com.inftel.liquibase.gradle.plugin.LiquibasePlugin"
         }
     }
 }
 
-publishing {
-    repositories {
-        val isSnapshot = "${properties["Project.Version"] ?: ""}".endsWith("-SNAPSHOT")
-        val isUpload = "${properties["OSSRH.Upload"] ?: ""}".toBoolean()
-        val username = "${properties["OSSRH.Username"] ?: ""}"
-        if (isUpload) {
+afterEvaluate {
+
+    publishing {
+
+        repositories {
+
             maven {
-                url = if (isSnapshot)
-                    uri("https://oss.sonatype.org/content/repositories/snapshots/")
-                else
-                    uri("https://oss.sonatype.org/service/local/staging/deploy/maven2/")
-                credentials {
-                    if (username.isNotBlank()) {
-                        this.username = username
-                        val password = password("OSSRH.Password")
-                        if (password.isNotBlank()) {
-                            this.password = password
-                        }
+                name = "build"
+                url = file("$buildDir/repository").toURI()
+            }
+
+            if ("${properties["ossrh.upload"]}".toBoolean()) {
+                maven {
+                    name = "snapshots"
+                    url = uri("https://oss.sonatype.org/content/repositories/snapshots/")
+                    credentials {
+                        username = "${properties["ossrh.username"]}"
+                        password = "${properties["ossrh.password"]}"
+                    }
+                }
+                maven {
+                    name = "staging"
+                    url = uri("https://oss.sonatype.org/service/local/staging/deploy/maven2/")
+                    credentials {
+                        username = "${properties["ossrh.username"]}"
+                        password = "${properties["ossrh.password"]}"
                     }
                 }
             }
-        } else {
-            maven("$buildDir/repository")
+            if ("${properties["bintray.upload"]}".toBoolean()) {
+                maven {
+                    name = "bintray"
+                    url = uri("https://api.bintray.com/maven/santoszv/oss/liquibase-gradle-plugin/;publish=1")
+                    credentials {
+                        username = "${properties["bintray.username"]}"
+                        password = "${properties["bintray.password"]}"
+                    }
+                }
+            }
         }
-    }
-}
 
-afterEvaluate {
-    publishing {
         publications {
-            val pluginMaven = findByName("pluginMaven") as DefaultMavenPublication
-            pluginMaven.apply {
-                groupId = "${properties["Project.GroupID"]}"
-                artifactId = "${properties["Project.ArtifactID"]}"
-                version = "${properties["Project.Version"]}"
+            named("pluginMaven", MavenPublication::class) {
 
                 artifact(tasks["sourcesJar"])
                 artifact(tasks["javadocJar"])
@@ -186,9 +150,9 @@ afterEvaluate {
                     }
                     developers {
                         developer {
-                            id.set("https://github.com/santoszv")
+                            id.set("santoszv")
                             name.set("Santos Zatarain Vera")
-                            email.set("coder.santoszv_at_gmail.com")
+                            email.set("santoszv@inftel.com.mx")
                         }
                     }
                     scm {
@@ -198,9 +162,8 @@ afterEvaluate {
                     }
                 }
             }
-            val jasperreportsPluginMarkerMaven = findByName("liquibasePluginMarkerMaven") as DefaultMavenPublication
-            jasperreportsPluginMarkerMaven.apply {
-                version = "${properties["Project.Version"]}"
+
+            named("liquibasePluginMarkerMaven", MavenPublication::class) {
 
                 pom {
                     name.set("Liquibase Gradle Plugin")
@@ -214,27 +177,41 @@ afterEvaluate {
                     }
                     developers {
                         developer {
-                            id.set("https://github.com/santoszv")
+                            id.set("santoszv")
                             name.set("Santos Zatarain Vera")
-                            email.set("coder.santoszv_at_gmail.com")
+                            email.set("santoszv@inftel.com.mx")
                         }
                     }
                     scm {
                         connection.set("scm:git:https://github.com/santoszv/liquibase-gradle-plugin.git")
                         developerConnection.set("scm:git:https://github.com/santoszv/liquibase-gradle-plugin.git")
-                        url.set("https://github.com/santoszv")
+                        url.set("https://github.com/santoszv/liquibase-gradle-plugin")
                     }
                 }
             }
         }
     }
 
-    signing {
-        useGpgCmd()
-        val keyName = "${properties["signing.gnupg.keyName"] ?: ""}"
-        if (keyName.isNotBlank()) {
+    if (!"$version".endsWith("-SNAPSHOT")) {
+        signing {
+            useGpgCmd()
             sign(publishing.publications["pluginMaven"])
             sign(publishing.publications["liquibasePluginMarkerMaven"])
+        }
+    }
+}
+
+if (!"$version".endsWith("-SNAPSHOT")) {
+    pluginBundle {
+        website = "https://github.com/santoszv/liquibase-gradle-plugin"
+        vcsUrl = "https://github.com/santoszv/liquibase-gradle-plugin.git"
+        description = "Liquibase Gradle Plugin"
+        tags = listOf("liquibase", "database")
+
+        (plugins) {
+            "liquibase" {
+                displayName = "Liquibase Gradle Plugin"
+            }
         }
     }
 }
