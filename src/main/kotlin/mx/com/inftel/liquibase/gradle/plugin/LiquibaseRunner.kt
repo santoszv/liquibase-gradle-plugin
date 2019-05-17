@@ -380,7 +380,6 @@ class LiquibaseRunner(private val project: Project, private val command: Liquiba
                 println("Liquibase: Problems in cleaning up.")
             }
         }
-        println("All seems to be fine.")
     }
 
     private fun changelogSync() {

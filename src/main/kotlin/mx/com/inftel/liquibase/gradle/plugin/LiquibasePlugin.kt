@@ -47,7 +47,7 @@ open class LiquibaseExtension(private val project: Project) {
         for (command in LiquibaseCommandEnum.values()) {
             project.tasks.register("$name${command.name}", LiquibaseTask::class.java) {
                 it.group = "$name database"
-                it.description = command.description
+                it.description = command.description(parameters)
                 it.command = command
                 it.parameters = parameters
             }
@@ -127,37 +127,79 @@ class LiquibaseParameters {
     var databaseChangeLogTableNameLockTable: String? = null
 }
 
-enum class LiquibaseCommandEnum(val description: String) {
+enum class LiquibaseCommandEnum {
     // Database Update Commands
-    DatabaseUpdate("Updates database to current version."),
-    DatabaseUpdateCount("Applies the next <value> change sets."),
-    DatabaseUpdateSQL("Writes SQL to update database to current version to a file."),
-    DatabaseUpdateCountSQL("Writes SQL to apply the next <value> change sets to a file."),
+    DatabaseUpdate {
+        override fun description(params: LiquibaseParameters) = "Updates database to current version."
+    },
+    DatabaseUpdateCount {
+        override fun description(params: LiquibaseParameters) = "Applies the next ${params.changesToApply} change sets."
+    },
+    DatabaseUpdateSQL {
+        override fun description(params: LiquibaseParameters) = "Writes SQL to update database to current version to a file."
+    },
+    DatabaseUpdateCountSQL {
+        override fun description(params: LiquibaseParameters) = "Writes SQL to apply the next ${params.changesToApply} change sets to a file."
+    },
     // Database Rollback Commands
-    DatabaseRollback("Rolls back the database to the state it was in when the tag was applied."),
+    DatabaseRollback {
+        override fun description(params: LiquibaseParameters) = "Rolls back the database to the state it was in when the tag '${params.tagToRollBackTo}' was applied."
+    },
     //RollbackToDate("Rolls back the database to the state it was in at the given date/time."),
-    DatabaseRollbackCount("Rolls back the last <value> change sets."),
-    DatabaseRollbackSQL("Writes SQL to roll back the database to the state it was in when the tag was applied to a file."),
+    DatabaseRollbackCount {
+        override fun description(params: LiquibaseParameters) = "Rolls back the last ${params.changesToRollback} change sets."
+    },
+    DatabaseRollbackSQL {
+        override fun description(params: LiquibaseParameters) = "Writes SQL to roll back the database to the state it was in when the tag '${params.tagToRollBackTo}' was applied to a file."
+    },
     //RollbackToDateSQL("Writes SQL to roll back the database to the state it was in at the given date/time version to a file."),
-    DatabaseRollbackCountSQL("Writes SQL to roll back the last <value> change sets to a file."),
+    DatabaseRollbackCountSQL {
+        override fun description(params: LiquibaseParameters) = "Writes SQL to roll back the last ${params.changesToRollback} change sets to a file."
+    },
     //FutureRollbackSQL("Writes SQL to roll back the database to the current state after the changes in the changeslog have been applied."),
     //UpdateTestingRollback("Updates the database, then rolls back changes before updating again."),
-    DatabaseGenerateChangeLog("Generate changeLog of the database to standard out. v1.8 requires the dataDir parameter currently."),
+    DatabaseGenerateChangeLog {
+        override fun description(params: LiquibaseParameters) = "Generate changeLog of the database to standard out."
+    },
     // Diff Commands
     //Diff("Writes description of differences to standard out."),
     //DiffChangeLog("Writes Change Log XML to update the base database to the target database to standard out."),
     // Documentation Commands
-    DatabaseDoc("Generates Javadoc-like documentation based on current database and change log."),
+    DatabaseDoc {
+        override fun description(params: LiquibaseParameters) = "Generates Javadoc-like documentation based on current database and change log."
+    },
     // Maintenance Commands
-    DatabaseTag("Tags the current database state for future rollback."),
-    DatabaseTagExists("Checks whether the given tag is already existing."),
-    DatabaseStatus("Outputs count of unrun change sets."),
-    DatabaseValidate("Checks the changelog for errors."),
-    DatabaseChangelogSync("Mark all changes as executed in the database."),
-    DatabaseChangelogSyncSQL("Writes SQL to mark all changes as executed in the database to a file."),
+    DatabaseTag {
+        override fun description(params: LiquibaseParameters) = "Tags with '${params.tag}' the current database state for future rollback."
+    },
+    DatabaseTagExists {
+        override fun description(params: LiquibaseParameters) = "Checks whether the given tag '${params.tag}' is already existing."
+    },
+    DatabaseStatus {
+        override fun description(params: LiquibaseParameters) = "Outputs count of unrun change sets."
+    },
+    DatabaseValidate {
+        override fun description(params: LiquibaseParameters) = "Checks the changelog for errors."
+    },
+    DatabaseChangelogSync {
+        override fun description(params: LiquibaseParameters) = "Mark all changes as executed in the database."
+    },
+    DatabaseChangelogSyncSQL {
+        override fun description(params: LiquibaseParameters) = "Writes SQL to mark all changes as executed in the database to a file."
+    },
     //MarkNextChangeSetRan("Mark the next change set as executed in the database."),
-    DatabaseListLocks("Lists who currently has locks on the database changelog."),
-    DatabaseReleaseLocks("Releases all locks on the database changelog."),
-    DatabaseDropAll("Drops all database objects owned by the user. Note that functions, procedures and packages are not dropped (limitation in 1.8.1)."),
-    DatabaseClearCheckSums("Removes current checksums from database. On next run checksums will be recomputed.")
+    DatabaseListLocks {
+        override fun description(params: LiquibaseParameters) = "Lists who currently has locks on the database changelog."
+    },
+    DatabaseReleaseLocks {
+        override fun description(params: LiquibaseParameters) = "Releases all locks on the database changelog."
+    },
+    DatabaseDropAll {
+        override fun description(params: LiquibaseParameters) = "Drops all database objects owned by the user."
+    },
+    DatabaseClearCheckSums {
+        override fun description(params: LiquibaseParameters) = "Removes current checksums from database. On next run checksums will be recomputed."
+    };
+
+    abstract fun description(params: LiquibaseParameters): String
 }
